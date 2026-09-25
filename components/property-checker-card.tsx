@@ -1,19 +1,28 @@
 const propertyTypes = ["Home", "Condo", "Rental", "Multifamily", "Commercial"];
 
+const inputClass =
+  "mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3.5 transition placeholder:text-ink/40 focus:border-ink";
+
 export function PropertyCheckerCard() {
   return (
     <form
       id="checker"
-      className="rounded-[2rem] border border-black/10 bg-[var(--card)] p-5 shadow-[0_24px_80px_rgba(20,30,24,0.08)] md:p-7"
+      action="/#checker"
+      aria-labelledby="checker-title"
+      className="rounded-[2rem] border border-line bg-card p-5 shadow-[0_24px_80px_rgba(20,30,24,0.08)] md:p-7"
     >
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-black/45">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">
             Property Trouble Checker
           </p>
-          <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">Start with your property</h2>
+          <h2 id="checker-title" className="mt-2 text-2xl font-black tracking-[-0.03em]">
+            Start with your property
+          </h2>
         </div>
-        <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold">MVP</span>
+        <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-ink">
+          Beta
+        </span>
       </div>
 
       <label className="block text-sm font-bold" htmlFor="zip">
@@ -23,8 +32,12 @@ export function PropertyCheckerCard() {
         id="zip"
         name="zip"
         inputMode="numeric"
+        autoComplete="postal-code"
+        maxLength={5}
+        pattern="\d{5}"
+        title="5-digit U.S. ZIP code"
         placeholder="e.g. 33139"
-        className="mt-2 w-full rounded-2xl border border-black/15 bg-white px-4 py-3.5 outline-none ring-0 transition focus:border-black"
+        className={inputClass}
       />
 
       <fieldset className="mt-5">
@@ -33,7 +46,7 @@ export function PropertyCheckerCard() {
           {propertyTypes.map((type) => (
             <label key={type} className="cursor-pointer">
               <input className="peer sr-only" type="radio" name="propertyType" value={type} />
-              <span className="block rounded-full border border-black/15 px-3 py-2 text-sm peer-checked:border-black peer-checked:bg-black peer-checked:text-white">
+              <span className="block rounded-full border border-ink/15 px-3 py-2 text-sm transition hover:border-ink/40 peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
                 {type}
               </span>
             </label>
@@ -48,18 +61,22 @@ export function PropertyCheckerCard() {
         id="year"
         name="year"
         inputMode="numeric"
+        maxLength={4}
+        pattern="\d{4}"
+        title="4-digit year, e.g. 1972"
         placeholder="e.g. 1972"
-        className="mt-2 w-full rounded-2xl border border-black/15 bg-white px-4 py-3.5 outline-none transition focus:border-black"
+        className={inputClass}
       />
 
       <button
-        type="button"
-        className="mt-6 w-full rounded-2xl bg-[#17211c] px-5 py-4 font-black text-white transition hover:translate-y-[-1px]"
+        type="submit"
+        className="mt-6 w-full rounded-2xl bg-ink px-5 py-4 font-black text-white transition hover:-translate-y-px hover:opacity-95"
       >
         Check My Property
       </button>
-      <p className="mt-3 text-xs leading-5 text-black/45">
-        Phase 1 establishes the interface. Deterministic ZIP, age and property matching arrives in the checker packet.
+      <p className="mt-3 text-xs leading-5 text-muted">
+        Your ZIP, building age and property type are used to surface local rules, common failure
+        points and typical repair costs. Results are informational.
       </p>
     </form>
   );
