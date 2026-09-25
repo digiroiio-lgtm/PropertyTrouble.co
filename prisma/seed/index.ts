@@ -18,11 +18,14 @@ import { problems } from "./data/problems";
 import { professionalTypes } from "./data/professional-types";
 import { propertyTypes } from "./data/property-types";
 import { regulations, VERIFICATION_NOTE } from "./data/regulations";
+import { SEED_VERIFIER, verificationEvents } from "./data/verification-events";
 
 type Tx = Prisma.TransactionClient;
 type IdMap = Map<string, string>;
 
 const SEED_ACCESSED_AT = new Date("2026-09-25T00:00:00Z");
+/** Notes used by earlier seed versions, so their orphaned sources are cleaned up. */
+const LEGACY_SOURCE_NOTES = ["Seed data — requires human verification against the primary source."];
 
 function need(map: IdMap, key: string, kind: string): string {
   const id = map.get(key);
@@ -127,8 +130,13 @@ async function main() {
     const regulationIds = await db.$transaction(async (tx) => {
       const ids: IdMap = new Map();
       for (const { locations: regLocations, propertyTypes: regTypes, sources, ...item } of regulations) {
-        const data = { ...item, sourceConfidence: "UNVERIFIED" as const, lastVerifiedAt: null };
-        const regulation = await tx.regulation.upsert({ where: { slug: item.slug }, create: data, update: data });
+        // Verification state is only initialized on create, so re-seeding never
+        // overwrites a verification recorded by a person.
+        const regulation = await tx.regulation.upsert({
+          where: { slug: item.slug },
+          create: { ...item, sourceConfidence: "UNVERIFIED", lastVerifiedAt: null },
+          update: item,
+        });
         ids.set(item.slug, regulation.id);
 
         for (const { key, scopeNotes } of regLocations) {
@@ -147,9 +155,11 @@ async function main() {
             update: { applicabilityNotes },
           });
         }
+        const sourceIds: string[] = [];
         for (const { claimScope, ...source } of sources) {
           const sourceData = { ...source, accessedAt: SEED_ACCESSED_AT, lastVerifiedAt: null, notes: VERIFICATION_NOTE };
           const row = await tx.source.upsert({ where: { url: source.url }, create: sourceData, update: sourceData });
+          sourceIds.push(row.id);
           const link = { regulationId: regulation.id, sourceId: row.id };
           await tx.regulationSource.upsert({
             where: { regulationId_sourceId: link },
@@ -157,8 +167,38 @@ async function main() {
             update: { isPrimaryForRegulation: source.isPrimary, claimScope },
           });
         }
+        // Drop links to sources that were removed from the seed data.
+        await tx.regulationSource.deleteMany({ where: { regulationId: regulation.id, sourceId: { notIn: sourceIds } } });
       }
+      // Remove seed-created sources that no regulation cites any more.
+      await tx.source.deleteMany({
+        where: { regulations: { none: {} }, notes: { in: [VERIFICATION_NOTE, ...LEGACY_SOURCE_NOTES] } },
+      });
       return ids;
+    }, options);
+
+    await db.$transaction(async (tx) => {
+      // The seed owns the events it created; replace them on every run.
+      await tx.verificationEvent.deleteMany({ where: { verifiedBy: SEED_VERIFIER } });
+      for (const { regulationSlug, verifiedAt, ...event } of verificationEvents) {
+        const regulationId = need(regulationIds, regulationSlug, "regulation");
+        await tx.verificationEvent.create({
+          data: { ...event, regulationId, verifiedBy: SEED_VERIFIER, verifiedAt: new Date(`${verifiedAt}T00:00:00Z`) },
+        });
+        // Mirror the outcome only while no person has recorded an event.
+        const humanEvents = await tx.verificationEvent.count({
+          where: { regulationId, verifiedBy: { not: SEED_VERIFIER } },
+        });
+        if (humanEvents > 0) continue;
+        // Mirrors recordVerificationEvent(): only a VERIFIED outcome sets lastVerifiedAt.
+        await tx.regulation.update({
+          where: { id: regulationId },
+          data: {
+            sourceConfidence: event.status,
+            ...(event.status === "VERIFIED" ? { lastVerifiedAt: new Date(`${verifiedAt}T00:00:00Z`) } : {}),
+          },
+        });
+      }
     }, options);
 
     await db.$transaction(async (tx) => {
@@ -252,6 +292,7 @@ async function main() {
       costModels: await db.costModel.count(),
       contentPages: await db.contentPage.count(),
       opportunityScores: await db.opportunityScore.count(),
+      verificationEvents: await db.verificationEvent.count(),
     };
     console.log("Seed complete:", counts);
   } finally {

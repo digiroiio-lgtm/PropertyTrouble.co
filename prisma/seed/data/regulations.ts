@@ -1,11 +1,14 @@
 import type { LocationType, RegulationStatus, SourceType } from "@prisma/client";
 
 /**
- * Seed regulations. Every fact here was written without access to the
- * primary sources, so all regulations and sources are seeded UNVERIFIED and
- * must be checked by a person before any page cites them.
+ * Seed regulations. Facts were cross-checked on 2026-09-25 against web-search
+ * summaries of the official sources listed below; the primary text itself
+ * could not be opened from the build environment. Regulations are therefore
+ * seeded NEEDS_REVIEW (see verification-events.ts) until a person reads the
+ * primary sources and records a VERIFIED event.
  */
-export const VERIFICATION_NOTE = "Seed data — requires human verification against the primary source.";
+export const VERIFICATION_NOTE =
+  "URL and key facts cross-checked via search summaries on 2026-09-25; primary text not yet read by a person.";
 
 export interface SourceSeed {
   url: string;
@@ -56,7 +59,7 @@ export const regulations: RegulationSeed[] = [
     penaltyPossible: true,
     transactionRelevant: true,
     applicabilitySummary:
-      "Condominium and cooperative buildings three stories or more in height. The initial inspection is tied to the building's age from its certificate of occupancy; local officials may set an earlier threshold based on environmental conditions.",
+      "Condominium and cooperative buildings three stories or more in height. The initial milestone inspection is due by December 31 of the year the building reaches 30 years from its certificate of occupancy; the local enforcement agency may require it at 25 years where local circumstances, such as proximity to salt water, justify it.",
     requirementsSummary:
       "Phase one visual inspection by a licensed architect or engineer; a phase two inspection is required when substantial structural deterioration is found. Associations must distribute the inspection summary to unit owners.",
     exemptionsSummary: "Single-family homes, duplexes and buildings under three stories are outside the statute.",
@@ -103,9 +106,9 @@ export const regulations: RegulationSeed[] = [
     penaltyPossible: true,
     transactionRelevant: true,
     applicabilitySummary:
-      "Most buildings over 25,000 gross square feet, and multiple buildings on one tax lot that together exceed 50,000 square feet. Some building types follow alternative compliance pathways.",
+      "Most buildings over 25,000 gross square feet, and multiple buildings on one tax lot that together exceed 50,000 square feet. Limits are set by compliance period (2024–2029, 2030–2034, 2035–2039, 2040–2049) and tighten over time.",
     requirementsSummary:
-      "Owners file an annual emissions report certified by a registered design professional and keep emissions under the limit for the building's occupancy group.",
+      "Owners file an annual emissions report by May 1, certified by a registered design professional, and keep emissions under the limit for the building's size and occupancy group. The first report (2024 emissions) was due May 1, 2025.",
     exemptionsSummary:
       "Certain rent-regulated and affordable housing, and some other listed building types, follow alternative or prescriptive requirements instead of the standard emissions limits.",
     penaltySummary: "Civil penalties apply per ton of emissions over the limit and for late or missing reports.",
@@ -122,12 +125,20 @@ export const regulations: RegulationSeed[] = [
     ],
     sources: [
       {
-        url: "https://www.nyc.gov/site/sustainablebuildings/ll97/local-law-97.page",
-        title: "Local Law 97",
-        publisher: "NYC Mayor's Office of Climate and Environmental Justice / Department of Buildings",
+        url: "https://home.nyc.gov/site/sustainablebuildings/requirements/compliance.page",
+        title: "Compliance — NYC Sustainable Buildings",
+        publisher: "NYC Department of Buildings",
         sourceType: "CITY",
         isPrimary: true,
-        claimScope: "Coverage, limits, reporting",
+        claimScope: "Coverage, annual May 1 reporting",
+      },
+      {
+        url: "https://www.nyc.gov/assets/buildings/pdf/ll97_emissions.pdf",
+        title: "Local Law 97: Calculating building emissions & emission limits",
+        publisher: "NYC Department of Buildings",
+        sourceType: "CITY",
+        isPrimary: false,
+        claimScope: "Emission limits by occupancy group and compliance period",
       },
     ],
   },
@@ -147,7 +158,7 @@ export const regulations: RegulationSeed[] = [
     penaltyPossible: true,
     transactionRelevant: true,
     applicabilitySummary:
-      "Tier 1: nonresidential buildings over 50,000 square feet, phased by size. Tier 2: smaller commercial and multifamily buildings follow a separate benchmarking and management pathway.",
+      "Tier 1: commercial buildings over 50,000 square feet, with compliance phased by size (June 1, 2026 / 2027 / 2028). Tier 2: smaller commercial and multifamily buildings follow a separate benchmarking and management pathway.",
     requirementsSummary:
       "Benchmark energy use, meet the energy use intensity target for the building type or follow an approved conditional compliance path, and maintain an energy management plan.",
     exemptionsSummary: "Exemptions exist for specific hardship and building-use cases defined by Commerce.",
@@ -169,7 +180,15 @@ export const regulations: RegulationSeed[] = [
         publisher: "Washington State Legislature",
         sourceType: "STATE",
         isPrimary: true,
-        claimScope: "Statutory basis and tiered deadlines",
+        claimScope: "Statutory basis, energy use intensity targets, conditional compliance",
+      },
+      {
+        url: "https://www.commerce.wa.gov/cbps/tier-1-compliance/",
+        title: "CBPS Tier 1 compliance",
+        publisher: "Washington State Department of Commerce",
+        sourceType: "AGENCY",
+        isPrimary: false,
+        claimScope: "Tier 1 compliance dates by building size",
       },
     ],
   },
@@ -189,7 +208,7 @@ export const regulations: RegulationSeed[] = [
     transactionRelevant: true,
     applicabilitySummary: "Properties served by an on-site subsurface sewage disposal system.",
     requirementsSummary:
-      "A Title 5 inspection is generally required before a property is sold; systems that fail must be upgraded or replaced under a permit from the local board of health.",
+      "A system must be inspected at or within two years before a transfer of title (three years if the system was pumped at least annually), or up to six months after transfer when weather prevents inspection and the buyer is notified in writing. Failed systems must be upgraded or replaced under a permit from the local board of health. On Cape Cod, systems in designated nitrogen-sensitive areas must be upgraded to best-available nitrogen-reducing technology unless the town pursues a watershed permit.",
     exemptionsSummary: "Certain intra-family transfers and other listed cases are exempt from the transfer inspection.",
     penaltySummary: "Enforced by the local board of health and MassDEP.",
     transactionImpactSummary: "A failed inspection can delay closing or shift upgrade costs in negotiations.",
@@ -205,20 +224,28 @@ export const regulations: RegulationSeed[] = [
     ],
     sources: [
       {
-        url: "https://www.mass.gov/regulations/310-CMR-1500-the-state-environmental-code-title-5",
+        url: "https://www.mass.gov/doc/310-cmr-15-state-environmental-code-title-5-standard-requirements-for-the-siting-construction-inspection-upgrade-and-expansion-of-on-site-sewage-treatment-and-disposal-systems-and-for-the-transport-and-disposal-of-septage/download",
         title: "310 CMR 15.000: The State Environmental Code, Title 5",
         publisher: "Massachusetts Department of Environmental Protection",
         sourceType: "STATE",
         isPrimary: true,
-        claimScope: "Inspection and upgrade requirements",
+        claimScope: "Inspection at transfer, upgrade requirements, nitrogen-sensitive areas",
       },
       {
-        url: "https://www.mass.gov/guides/title-5-and-watershed-permit-regulations-for-cape-cod",
-        title: "Title 5 and Watershed Permit regulations for Cape Cod",
+        url: "https://www.mass.gov/guides/buying-or-selling-property-with-a-septic-system",
+        title: "Buying or selling property with a septic system",
         publisher: "Massachusetts Department of Environmental Protection",
         sourceType: "AGENCY",
         isPrimary: false,
-        claimScope: "Cape Cod nitrogen-sensitive-area rules",
+        claimScope: "Transfer inspection guidance",
+      },
+      {
+        url: "https://www.capecod.gov/departments/masstc/learn/homeowner-resources/2023-title-5-regulation-changes/",
+        title: "2023 Title 5 regulation changes",
+        publisher: "Barnstable County",
+        sourceType: "COUNTY",
+        isPrimary: false,
+        claimScope: "Cape Cod nitrogen-sensitive areas, watershed permits, upgrade timeline",
       },
     ],
   },

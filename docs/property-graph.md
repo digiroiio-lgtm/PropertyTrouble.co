@@ -44,7 +44,7 @@ Schema: `prisma/schema.prisma`. Migration: `prisma/migrations/*_property_graph`.
 3. **Never fabricate costs.** Numbers are optional. `INSUFFICIENT_DATA` rows must carry no estimates, and every cost row requires a methodology. Postgres enforces `low <= mid <= high`.
 4. **Totals are always computed.** `OpportunityScore.totalScore` comes from `calculateOpportunityScore()` in `lib/scoring/opportunity-score.ts`. Services reject caller-supplied totals, and a CHECK constraint requires the total to equal the sum of the dimensions.
 5. **Applicability inherits up the hierarchy.** `getApplicableRegulations()` walks a location's ancestors, so a Massachusetts rule applies on Cape Cod.
-6. **Nothing is verified by default.** Seeded regulations and sources are `UNVERIFIED` with no `lastVerifiedAt`. Record a `VerificationEvent` (via `recordVerificationEvent()`) before a page cites a regulation.
+6. **Verification is explicit.** New regulations start `UNVERIFIED`. The seed records a `NEEDS_REVIEW` event for each seeded regulation, from a 2026-09-25 cross-check against search summaries of the official sources. Only a person reading the primary source should record `VERIFIED` (via `recordVerificationEvent()`), which also sets `lastVerifiedAt`. Re-seeding never overwrites a verification recorded by a person.
 
 ## Integrity enforced in Postgres
 

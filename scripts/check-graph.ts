@@ -39,6 +39,9 @@ async function main() {
     const years = wa?.deadlines.map((d) => d.deadlineDate?.getUTCFullYear());
     check(JSON.stringify(years) === "[2026,2027,2028]", `Washington Clean Buildings deadlines: got ${JSON.stringify(years)}`);
 
+    const unreviewed = await db.regulation.findMany({ where: { verificationEvents: { none: {} } }, select: { slug: true } });
+    check(unreviewed.length === 0, `regulations without a verification event: ${unreviewed.map((r) => r.slug).join(", ")}`);
+
     const fabricated = await db.costModel.count({
       where: { confidence: "INSUFFICIENT_DATA", OR: [{ lowEstimate: { not: null } }, { highEstimate: { not: null } }] },
     });
