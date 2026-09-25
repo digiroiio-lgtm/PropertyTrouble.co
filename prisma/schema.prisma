@@ -1,3 +1,6 @@
+// PropertyTrouble property graph.
+// See docs/property-graph.md for the ontology and modeling rules.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,4 +8,523 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum LocationType {
+  COUNTRY
+  STATE
+  COUNTY
+  CITY
+  ZIP
+  MARKET
+  DISTRICT
+  SPECIAL_JURISDICTION
+}
+
+enum PropertyClass {
+  RESIDENTIAL
+  MULTIFAMILY
+  COMMERCIAL
+  MIXED
+}
+
+enum RegulationStatus {
+  ACTIVE
+  UPCOMING
+  PROPOSED
+  SUPERSEDED
+  EXPIRED
+  UNKNOWN
+}
+
+enum SourceType {
+  FEDERAL
+  STATE
+  COUNTY
+  CITY
+  AGENCY
+  UTILITY
+  STANDARD_BODY
+  INDUSTRY
+  OTHER
+}
+
+enum ContentStatus {
+  DRAFT
+  RESEARCH
+  SOURCE_VERIFIED
+  PUBLISHED
+  NEEDS_REVIEW
+  ARCHIVED
+}
+
+enum SearchIntent {
+  INFORMATIONAL
+  APPLICABILITY
+  REGULATION
+  DEADLINE
+  COST
+  INSPECTION
+  REPAIR
+  CONTRACTOR
+  TRANSACTION
+  FINANCING
+}
+
+enum CostConfidence {
+  VERIFIED_MARKET_RANGE
+  MODELED_ESTIMATE
+  INSUFFICIENT_DATA
+}
+
+enum CostUnit {
+  PROJECT
+  PER_SQFT
+  PER_UNIT
+  PER_FIXTURE
+  PER_LINEAR_FOOT
+  PER_SYSTEM
+}
+
+enum VerificationStatus {
+  VERIFIED
+  NEEDS_REVIEW
+  SOURCE_CHANGED
+  STALE
+  UNVERIFIED
+}
+
+enum DeadlineStatus {
+  ACTIVE
+  UPCOMING
+  PASSED
+  UNKNOWN
+}
+
+enum OpportunityStatus {
+  WATCH
+  RESEARCH
+  VALIDATED
+  INCUBATION_CANDIDATE
+  PAUSED
+  ARCHIVED
+}
+
+enum ContentPageType {
+  REGULATION
+  PROBLEM
+  COST
+  DEADLINE
+  LOCATION
+  TOOL
+  GUIDE
+}
+
+enum ProfessionalRelationshipType {
+  INSPECTS
+  DESIGNS
+  REPAIRS
+  REPLACES
+  PERMITS
+  VERIFIES
+  CONSULTS
+}
+
+// ─── Location ───────────────────────────────────────────────────────────────
+
+model Location {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String
+  type      LocationType
+  stateCode String?      @db.VarChar(2)
+  parentId  String?
+  latitude  Float?
+  longitude Float?
+  fips      String?
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  parent   Location?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Location[] @relation("LocationHierarchy")
+
+  regulationLocations RegulationLocation[]
+  deadlines           Deadline[]
+  contentPages        ContentPage[]
+  costModels          CostModel[]
+  opportunityScores   OpportunityScore[]
+
+  // Postgres treats NULL parentId values as distinct, so root-level
+  // duplicates are also guarded in lib/services/locations.ts.
+  @@unique([parentId, slug, type])
+  @@index([type])
+  @@index([stateCode])
+}
+
+// ─── Property type ──────────────────────────────────────────────────────────
+
+model PropertyType {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  class       PropertyClass
+  description String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  regulationPropertyTypes RegulationPropertyType[]
+  problemPropertyTypes    ProblemPropertyType[]
+  contentPages            ContentPage[]
+  costModels              CostModel[]
+  opportunityScores       OpportunityScore[]
+}
+
+// ─── Problems ───────────────────────────────────────────────────────────────
+
+model ProblemCategory {
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  description           String
+  /// 1–5, enforced by a CHECK constraint.
+  commercialIntentLevel Int
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  problems Problem[]
+}
+
+model Problem {
+  id              String   @id @default(cuid())
+  categoryId      String
+  name            String
+  slug            String   @unique
+  summary         String
+  description     String?
+  /// 1–5 when set, enforced by a CHECK constraint.
+  defaultSeverity Int?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  category             ProblemCategory       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  problemPropertyTypes ProblemPropertyType[]
+  problemProfessionals ProblemProfessional[]
+  costModels           CostModel[]
+  contentPages         ContentPage[]
+  opportunityScores    OpportunityScore[]
+
+  @@index([categoryId])
+}
+
+// ─── Regulations ────────────────────────────────────────────────────────────
+
+model Regulation {
+  id                  String              @id @default(cuid())
+  name                String
+  slug                String              @unique
+  summary             String
+  jurisdictionLevel   LocationType
+  issuingAuthority    String
+  status              RegulationStatus
+  effectiveDate       DateTime?
+  nextDeadline        DateTime?
+  recurrence          String?
+  mandatory           Boolean             @default(false)
+  inspectionRequired  Boolean             @default(false)
+  repairRequired      Boolean             @default(false)
+  permitRequired      Boolean             @default(false)
+  penaltyPossible     Boolean             @default(false)
+  transactionRelevant Boolean             @default(false)
+  sourceConfidence    VerificationStatus?
+  lastVerifiedAt      DateTime?
+  active              Boolean             @default(true)
+
+  // Legal nuance stays in structured summaries, not booleans.
+  applicabilitySummary     String?
+  requirementsSummary      String?
+  exemptionsSummary        String?
+  penaltySummary           String?
+  transactionImpactSummary String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sources            RegulationSource[]
+  locations          RegulationLocation[]
+  propertyTypes      RegulationPropertyType[]
+  deadlines          Deadline[]
+  costModels         CostModel[]
+  contentPages       ContentPage[]
+  verificationEvents VerificationEvent[]
+  opportunityScores  OpportunityScore[]
+
+  @@index([status])
+  @@index([jurisdictionLevel])
+  @@index([nextDeadline])
+}
+
+model RegulationLocation {
+  id           String  @id @default(cuid())
+  regulationId String
+  locationId   String
+  scopeNotes   String?
+
+  regulation Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([regulationId, locationId])
+  @@index([locationId])
+}
+
+model RegulationPropertyType {
+  id                 String  @id @default(cuid())
+  regulationId       String
+  propertyTypeId     String
+  applicabilityNotes String?
+
+  regulation   Regulation   @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  propertyType PropertyType @relation(fields: [propertyTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([regulationId, propertyTypeId])
+  @@index([propertyTypeId])
+}
+
+// ─── Sources ────────────────────────────────────────────────────────────────
+
+model Source {
+  id             String     @id @default(cuid())
+  title          String
+  publisher      String
+  url            String     @unique
+  sourceType     SourceType
+  publishedAt    DateTime?
+  accessedAt     DateTime
+  lastVerifiedAt DateTime?
+  isPrimary      Boolean    @default(false)
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  regulations RegulationSource[]
+}
+
+model RegulationSource {
+  id                     String   @id @default(cuid())
+  regulationId           String
+  sourceId               String
+  isPrimaryForRegulation Boolean  @default(false)
+  claimScope             String?
+  createdAt              DateTime @default(now())
+
+  regulation Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  source     Source     @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([regulationId, sourceId])
+  @@index([sourceId])
+}
+
+// ─── Deadlines ──────────────────────────────────────────────────────────────
+
+/// One regulation may have many deadlines (phases, tiers, recurring cycles).
+model Deadline {
+  id            String         @id @default(cuid())
+  regulationId  String
+  locationId    String?
+  name          String
+  description   String?
+  deadlineDate  DateTime?
+  status        DeadlineStatus
+  recurrence    String?
+  propertyScope String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  regulation Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  location   Location?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@unique([regulationId, name])
+  @@index([deadlineDate])
+  @@index([locationId])
+}
+
+// ─── Costs ──────────────────────────────────────────────────────────────────
+
+/// Numbers are optional. INSUFFICIENT_DATA rows carry no estimates.
+/// low <= mid <= high is enforced by lib/validation/cost.ts and a CHECK constraint.
+model CostModel {
+  id             String         @id @default(cuid())
+  problemId      String?
+  regulationId   String?
+  locationId     String?
+  propertyTypeId String?
+  lowEstimate    Decimal?       @db.Decimal(12, 2)
+  midEstimate    Decimal?       @db.Decimal(12, 2)
+  highEstimate   Decimal?       @db.Decimal(12, 2)
+  currency       String         @default("USD") @db.VarChar(3)
+  unit           CostUnit
+  confidence     CostConfidence
+  methodology    String
+  sourceNotes    String?
+  lastUpdatedAt  DateTime
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  problem      Problem?      @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  regulation   Regulation?   @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+  location     Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  propertyType PropertyType? @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+
+  @@index([problemId])
+  @@index([regulationId])
+  @@index([locationId])
+  @@index([propertyTypeId])
+}
+
+// ─── Professionals ──────────────────────────────────────────────────────────
+
+model ProfessionalType {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  problemProfessionals ProblemProfessional[]
+}
+
+model ProblemProfessional {
+  id                 String                       @id @default(cuid())
+  problemId          String
+  professionalTypeId String
+  relationshipType   ProfessionalRelationshipType
+  /// 1 = first call.
+  priority           Int
+  notes              String?
+
+  problem          Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  professionalType ProfessionalType @relation(fields: [professionalTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, professionalTypeId, relationshipType])
+  @@index([professionalTypeId])
+}
+
+model ProblemPropertyType {
+  id             String  @id @default(cuid())
+  problemId      String
+  propertyTypeId String
+  /// 1–5, enforced by a CHECK constraint.
+  relevance      Int
+  notes          String?
+
+  problem      Problem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  propertyType PropertyType @relation(fields: [propertyTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, propertyTypeId])
+  @@index([propertyTypeId])
+}
+
+// ─── Content ────────────────────────────────────────────────────────────────
+
+/// Maps SEO/GEO pages to structured entities. Article bodies live elsewhere.
+model ContentPage {
+  id                String          @id @default(cuid())
+  title             String
+  slug              String
+  fullPath          String          @unique
+  pageType          ContentPageType
+  status            ContentStatus   @default(DRAFT)
+  primaryIntent     SearchIntent
+  primaryKeyword    String?
+  secondaryKeywords String[]        @default([])
+  quickAnswer       String?
+  problemId         String?
+  regulationId      String?
+  locationId        String?
+  propertyTypeId    String?
+  lastVerifiedAt    DateTime?
+  indexable         Boolean         @default(false)
+  canonicalPath     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  publishedAt       DateTime?
+
+  problem      Problem?      @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  regulation   Regulation?   @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+  location     Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  propertyType PropertyType? @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([problemId])
+  @@index([regulationId])
+  @@index([locationId])
+  @@index([propertyTypeId])
+}
+
+// ─── Verification ───────────────────────────────────────────────────────────
+
+model VerificationEvent {
+  id                  String             @id @default(cuid())
+  regulationId        String
+  verifiedAt          DateTime
+  verifiedBy          String
+  status              VerificationStatus
+  notes               String?
+  sourceChanged       Boolean            @default(false)
+  deadlineChanged     Boolean            @default(false)
+  requirementsChanged Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+
+  regulation Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+
+  @@index([regulationId, verifiedAt])
+}
+
+// ─── Opportunity ────────────────────────────────────────────────────────────
+
+/// Dimension ranges and totalScore are enforced by CHECK constraints.
+/// totalScore is always computed by lib/scoring/opportunity-score.ts.
+model OpportunityScore {
+  id             String  @id @default(cuid())
+  name           String
+  slug           String  @unique
+  locationId     String?
+  problemId      String?
+  regulationId   String?
+  propertyTypeId String?
+
+  regulatoryForceScore  Int
+  spendScore            Int
+  urgencyScore          Int
+  searchIntentScore     Int
+  monetizationScore     Int
+  seoDefensibilityScore Int
+  goldenWindowScore     Int
+
+  totalScore Int
+
+  status OpportunityStatus @default(WATCH)
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  location     Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  problem      Problem?      @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  regulation   Regulation?   @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+  propertyType PropertyType? @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+
+  @@index([totalScore])
+  @@index([status])
+  @@index([locationId])
+  @@index([problemId])
+  @@index([regulationId])
+  @@index([propertyTypeId])
 }
