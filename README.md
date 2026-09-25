@@ -42,8 +42,14 @@ npm run dev         # then open http://localhost:3000/internal
 
 - Use `npm run db:migrate` to create a new migration after editing `prisma/schema.prisma`.
 - `/internal/*` is available only in development. Production returns 404.
-- For production, create a Postgres database (for example Neon through the Vercel Marketplace) and set `DATABASE_URL` in the Vercel project. Then run `npm run db:deploy` against it before relying on data-backed features.
-- Seeded regulations and sources are marked `UNVERIFIED`. Verify them against the primary sources before publishing pages that cite them.
+- Seeded regulations are `NEEDS_REVIEW`. Their key facts and source URLs were cross-checked against search summaries of the official sources, but a person still has to read each primary source and record a `VERIFIED` event before a page cites it. Re-running the seed never overwrites a verification recorded by a person.
+
+### Production database (Vercel + Neon)
+
+1. In the Vercel project, open **Storage → Create Database → Neon** (Marketplace) and connect it to the project. Scope it to **Production**, or give Preview its own database.
+2. Vercel adds `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` (direct) automatically.
+3. Redeploy. On **production** builds, `npm run build:vercel` runs `prisma migrate deploy` over the direct connection before `next build` (`scripts/vercel-migrate.mjs`). Preview builds and builds without a database skip this step.
+4. Seed once from your machine, using the direct URL: `DATABASE_URL="<DATABASE_URL_UNPOOLED>" npm run db:seed && npm run db:check`.
 
 ## Design system
 
