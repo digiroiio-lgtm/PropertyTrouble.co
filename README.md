@@ -24,9 +24,26 @@ cp .env.example .env
 npm run dev
 ```
 
-Checks (run in CI on every PR): `npm run lint`, `npm run typecheck`, `npm run build`.
+Checks (run in CI on every PR): `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, plus a Postgres job that migrates, seeds twice and checks the graph.
 
-Database work starts from `prisma/schema.prisma`.
+## Database and property graph
+
+The ontology, modeling rules and code layout are in [`docs/property-graph.md`](docs/property-graph.md).
+
+The public site builds and runs **without** a database. Migrations, seeding and the `/internal` debug views need PostgreSQL:
+
+```bash
+# point DATABASE_URL at PostgreSQL 15+ in .env, then:
+npm run db:deploy   # apply migrations
+npm run db:seed     # idempotent: safe to run repeatedly
+npm run db:check    # assert the seeded graph shape
+npm run dev         # then open http://localhost:3000/internal
+```
+
+- Use `npm run db:migrate` to create a new migration after editing `prisma/schema.prisma`.
+- `/internal/*` is available only in development. Production returns 404.
+- For production, create a Postgres database (for example Neon through the Vercel Marketplace) and set `DATABASE_URL` in the Vercel project. Then run `npm run db:deploy` against it before relying on data-backed features.
+- Seeded regulations and sources are marked `UNVERIFIED`. Verify them against the primary sources before publishing pages that cite them.
 
 ## Design system
 

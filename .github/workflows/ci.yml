@@ -8,8 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # No DATABASE_URL on purpose: the app must build without a database.
     env:
-      DATABASE_URL: postgresql://user:password@localhost:5432/propertytrouble
       NEXT_PUBLIC_SITE_URL: https://propertytrouble.com
     steps:
       - uses: actions/checkout@v4
@@ -20,4 +20,39 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+
+  db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pt
+          POSTGRES_PASSWORD: pt
+          POSTGRES_DB: propertytrouble
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pt"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://pt:pt@localhost:5432/propertytrouble
+      SHADOW_DATABASE_URL: postgresql://pt:pt@localhost:5432/propertytrouble_shadow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:deploy
+      - name: Migrations match schema
+        run: |
+          PGPASSWORD=pt psql -h localhost -U pt -d propertytrouble -c "CREATE DATABASE propertytrouble_shadow"
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+      - name: Seed twice (idempotency)
+        run: npm run db:seed && npm run db:seed
+      - run: npm run db:check

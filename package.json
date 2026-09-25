@@ -12,13 +12,22 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:check": "tsx scripts/check-graph.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed/index.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
@@ -30,6 +39,8 @@
     "postcss": "^8.0.0",
     "prisma": "^6.0.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.9.0"
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.2"
   }
 }
