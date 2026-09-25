@@ -2,13 +2,17 @@
   "name": "propertytrouble",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "prisma:generate": "prisma generate"
+    "typecheck": "next typegen && tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

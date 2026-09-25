@@ -1,38 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f6f4ee;
-  --foreground: #17211c;
-  --muted: #657168;
-  --line: #d9ded8;
-  --card: #fffdf8;
-  --accent: #d8ff63;
-  --accent-ink: #18200f;
+/*
+ * Brand tokens. Registered with @theme so Tailwind generates utilities:
+ * bg-ink, text-muted, border-line, bg-card, bg-accent, text-accent-ink, font-display…
+ */
+@theme {
+  --color-background: #f6f4ee;
+  --color-foreground: #17211c;
+  --color-ink: #17211c;
+  --color-muted: #59645c;
+  --color-line: #d9ded8;
+  --color-card: #fffdf8;
+  --color-accent: #d8ff63;
+  --color-accent-ink: #18200f;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter-tight), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+/* Base styles live in the base layer so Tailwind utilities can override them. */
+@layer base {
+  html {
+    background: var(--color-background);
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 85% 5%, rgb(216 255 99 / 0.22), transparent 24rem),
+      var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px var(--color-accent);
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
 }
 
-html {
-  background: var(--background);
-}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 
-body {
-  margin: 0;
-  background:
-    radial-gradient(circle at 85% 5%, rgba(216, 255, 99, 0.2), transparent 24rem),
-    var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
