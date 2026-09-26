@@ -1,82 +1,70 @@
-const propertyTypes = ["Home", "Condo", "Rental", "Multifamily", "Commercial"];
-
 const inputClass =
-  "mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3.5 transition placeholder:text-ink/40 focus:border-ink";
+  "mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3.5 transition focus:border-ink";
 
 export function PropertyCheckerCard() {
   return (
     <form
       id="checker"
-      action="/#checker"
+      action="/checker"
+      method="get"
       aria-labelledby="checker-title"
       className="rounded-[2rem] border border-line bg-card p-5 shadow-[0_24px_80px_rgba(20,30,24,0.08)] md:p-7"
     >
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">
-            Property Trouble Checker
-          </p>
-          <h2 id="checker-title" className="mt-2 text-2xl font-black tracking-[-0.03em]">
-            Start with your property
-          </h2>
-        </div>
-        <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-ink">
-          Beta
-        </span>
-      </div>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">
+        Property Trouble Checker · Live pilot
+      </p>
+      <h2 id="checker-title" className="mt-2 text-2xl font-black tracking-[-0.03em]">
+        Check Washington Clean Buildings Tier 1
+      </h2>
+      <p className="mt-3 text-sm leading-6 text-muted">
+        Answer three questions for an initial, source-backed screening.
+        Other states and property rules are not yet checked.
+      </p>
 
-      <label className="block text-sm font-bold" htmlFor="zip">
-        ZIP code
+      <label className="mt-5 block text-sm font-bold" htmlFor="state">Building location</label>
+      <select id="state" name="state" required defaultValue="" className={inputClass}>
+        <option value="" disabled>Select location</option>
+        <option value="WA">Washington state</option>
+        <option value="OTHER">Another state</option>
+      </select>
+
+      <label className="mt-5 block text-sm font-bold" htmlFor="qualifyingArea">
+        Qualifying floor area (sq ft)
       </label>
       <input
-        id="zip"
-        name="zip"
+        id="qualifyingArea"
+        name="qualifyingArea"
+        type="number"
         inputMode="numeric"
-        autoComplete="postal-code"
-        maxLength={5}
-        pattern="\d{5}"
-        title="5-digit U.S. ZIP code"
-        placeholder="e.g. 33139"
+        min="1"
+        max="999999999"
+        step="1"
+        required
+        placeholder="e.g. 95000"
         className={inputClass}
       />
+      <p className="mt-2 text-xs leading-5 text-muted">
+        Add nonresidential, hotel, motel and dormitory gross floor area. Exclude parking garages.
+        If you do not know the breakdown, obtain the building records before relying on a result.
+      </p>
 
-      <fieldset className="mt-5">
-        <legend className="text-sm font-bold">Property type</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {propertyTypes.map((type) => (
-            <label key={type} className="cursor-pointer">
-              <input className="peer sr-only" type="radio" name="propertyType" value={type} />
-              <span className="block rounded-full border border-ink/15 px-3 py-2 text-sm transition hover:border-ink/40 peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
-                {type}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <label className="mt-5 block text-sm font-bold" htmlFor="year">
-        Approximate year built
-      </label>
-      <input
-        id="year"
-        name="year"
-        inputMode="numeric"
-        maxLength={4}
-        pattern="\d{4}"
-        title="4-digit year, e.g. 1972"
-        placeholder="e.g. 1972"
-        className={inputClass}
-      />
+      <label className="mt-5 block text-sm font-bold" htmlFor="ownership">Building ownership</label>
+      <select id="ownership" name="ownership" required defaultValue="" className={inputClass}>
+        <option value="" disabled>Select ownership</option>
+        <option value="private">Not federal or federally recognized tribal ownership</option>
+        <option value="federal">Federal building</option>
+        <option value="tribal">Owned by a federally recognized tribe</option>
+        <option value="unsure">I am not sure</option>
+      </select>
 
       <button
         type="submit"
         className="mt-6 w-full rounded-2xl bg-ink px-5 py-4 font-black text-white transition hover:-translate-y-px hover:opacity-95"
       >
-        Check My Property
+        Check Tier 1 criteria
       </button>
       <p className="mt-3 text-xs leading-5 text-muted">
-        Your ZIP, building age and property type are used to surface local rules, common failure
-        points and typical repair costs. Results are informational.
+        Preliminary screening only. No address lookup, compliance determination, cost estimate or contractor match.
       </p>
     </form>
   );
