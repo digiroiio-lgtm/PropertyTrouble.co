@@ -79,22 +79,12 @@ export default function Home() {
           <h2 className={sectionTitle}>Start with what you&apos;re dealing with.</h2>
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {problems.map((problem) => (
-              <Link
-                key={problem}
-                href="#checker"
-                aria-label={"View the Washington Tier 1 pilot; " + problem + " problem matching is not available yet"}
-                className="group rounded-2xl border border-line bg-card p-4 font-bold transition hover:-translate-y-0.5 hover:border-ink/30"
-              >
-                <span className="flex size-10 items-center justify-center rounded-xl bg-background text-ink transition group-hover:bg-accent">
+              <div key={problem} className="rounded-2xl border border-line bg-card p-4 font-bold">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-background text-ink">
                   <ProblemIcon name={problem} className="size-5" />
                 </span>
-                <span className="mt-6 flex items-center justify-between">
-                  {problem}
-                  <span aria-hidden="true" className="text-ink/35 transition group-hover:text-ink">
-                    →
-                  </span>
-                </span>
-              </Link>
+                <span className="mt-6 block">{problem}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -141,12 +131,9 @@ export default function Home() {
         <ul className="mt-8 flex flex-wrap gap-2">
           {states.map((state) => (
             <li key={state}>
-              <Link
-                href="#checker"
-                className="block rounded-full border border-ink/15 bg-card px-4 py-2 text-sm font-semibold transition hover:border-ink hover:bg-ink hover:text-white"
-              >
+              <span className="block rounded-full border border-ink/15 bg-card px-4 py-2 text-sm font-semibold">
                 {state}
-              </Link>
+              </span>
             </li>
           ))}
         </ul>
