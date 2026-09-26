@@ -56,11 +56,11 @@ export default function Home() {
             What does your property need next?
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-ink/70 sm:text-xl">
-            Rules, repairs, inspections, deadlines and costs for U.S. property owners.
+            Explore property rules, repairs, inspections, deadlines and costs. Our first live screening covers Washington Clean Buildings Tier 1 only.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="#checker" className="rounded-full bg-ink px-5 py-3 font-bold text-white transition hover:opacity-90">
-              Check Your Property
+              Check Washington Tier 1
             </Link>
             <Link
               href="#problems"
@@ -82,6 +82,7 @@ export default function Home() {
               <Link
                 key={problem}
                 href="#checker"
+                aria-label={"View the Washington Tier 1 pilot; " + problem + " problem matching is not available yet"}
                 className="group rounded-2xl border border-line bg-card p-4 font-bold transition hover:-translate-y-0.5 hover:border-ink/30"
               >
                 <span className="flex size-10 items-center justify-center rounded-xl bg-background text-ink transition group-hover:bg-accent">
@@ -162,14 +163,13 @@ export default function Home() {
             Understand the issue. Check the rule. Know the next step.
           </h2>
           <p className="mt-5 max-w-2xl leading-7 text-white/70">
-            Checkers, cost ranges and deadline trackers built on sourced regulatory data and local
-            applicability.
+            Our first live checker screens Washington Clean Buildings Tier 1 from self-reported building details. Other rules and address-level results are still in research.
           </p>
           <Link
             href="#checker"
             className="mt-7 inline-block rounded-full bg-accent px-5 py-3 font-bold text-accent-ink transition hover:opacity-90"
           >
-            Check Your Property
+            Check Washington Tier 1
           </Link>
         </div>
       </section>
