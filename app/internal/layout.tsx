@@ -12,6 +12,7 @@ const links = [
   ["Locations", "/internal/locations"],
   ["Regulations", "/internal/regulations"],
   ["Opportunities", "/internal/opportunities"],
+  ["Research windows", "/internal/research"],
 ] as const;
 
 /** Debug views for the property graph. Development only; 404 everywhere else. */
